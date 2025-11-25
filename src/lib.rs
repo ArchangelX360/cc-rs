@@ -551,7 +551,7 @@ impl Build {
             shell_escaped_flags: None,
             build_cache: Arc::default(),
             inherit_rustflags: true,
-            prefer_clang_cl_over_msvc: false,
+            prefer_clang_cl_over_msvc: true,
         }
     }
 
