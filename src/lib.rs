@@ -1966,8 +1966,7 @@ impl Build {
         }
         for directory in self.include_directories.iter() {
             if cmd.is_like_clang_cl() {
-                cmd.args
-                    .push(format!("-Xclang=-I{}", directory.display()).into());
+                cmd.args.push(format!("-Xclang=-I{}", directory.display()).into());
             } else {
                 cmd.args.push("-I".into());
                 cmd.args.push(directory.as_os_str().into());
@@ -2012,15 +2011,19 @@ impl Build {
             }
         }
         for (key, value) in self.definitions.iter() {
-            let separator = if self.prefer_clang_cl_over_msvc {
-                " "
+            if cmd.is_like_clang_cl() {
+                if let Some(ref value) = *value {
+                    let v = value.replace('"', r#"""#);
+                    cmd.args.push(format!("-D {key}={v}").into());
+                } else {
+                    cmd.args.push(format!("-D {key}").into());
+                }
             } else {
-                ""
-            };
-            if let Some(ref value) = *value {
-                cmd.args.push(format!("-D{separator}{key}={value}").into());
-            } else {
-                cmd.args.push(format!("-D{separator}{key}").into());
+                if let Some(ref value) = *value {
+                    cmd.args.push(format!("-D{key}={value}").into());
+                } else {
+                    cmd.args.push(format!("-D{key}").into());
+                }
             }
         }
 
@@ -2603,15 +2606,19 @@ impl Build {
             }
 
             for (key, value) in self.definitions.iter() {
-                let separator = if self.prefer_clang_cl_over_msvc {
-                    " "
+                if self.prefer_clang_cl_over_msvc  {
+                    if let Some(ref value) = *value {
+                        let v = value.replace('"', r#"""#);
+                        cmd.arg(format!("-D {key}={v}"));
+                    } else {
+                        cmd.arg(format!("-D {key}"));
+                    }
                 } else {
-                    ""
-                };
-                if let Some(ref value) = *value {
-                    cmd.arg(format!("-D{separator}{key}={value}"));
-                } else {
-                    cmd.arg(format!("-D{separator}{key}"));
+                    if let Some(ref value) = *value {
+                        cmd.arg(format!("-D{key}={value}"));
+                    } else {
+                        cmd.arg(format!("-D{key}"));
+                    }
                 }
             }
         }
