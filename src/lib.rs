@@ -1965,12 +1965,8 @@ impl Build {
             cmd.push_cc_arg(format!("-std{separator}{std}").into());
         }
         for directory in self.include_directories.iter() {
-            if cmd.is_like_clang_cl() {
-                cmd.args.push(format!("-Xclang=-I{}", directory.display()).into());
-            } else {
-                cmd.args.push("-I".into());
-                cmd.args.push(directory.as_os_str().into());
-            }
+            cmd.args.push("-I".into());
+            cmd.args.push(directory.as_os_str().into());
         }
         if self.warnings_into_errors {
             let warnings_to_errors_flag = cmd.family.warnings_to_errors_flag().into();
@@ -2011,19 +2007,10 @@ impl Build {
             }
         }
         for (key, value) in self.definitions.iter() {
-            if cmd.is_like_clang_cl() {
-                if let Some(ref value) = *value {
-                    let v = value.replace('"', r#"""#);
-                    cmd.args.push(format!("-D {key}={v}").into());
-                } else {
-                    cmd.args.push(format!("-D {key}").into());
-                }
+            if let Some(ref value) = *value {
+                cmd.args.push(format!("-D{key}={value}").into());
             } else {
-                if let Some(ref value) = *value {
-                    cmd.args.push(format!("-D{key}={value}").into());
-                } else {
-                    cmd.args.push(format!("-D{key}").into());
-                }
+                cmd.args.push(format!("-D{key}").into());
             }
         }
 
@@ -2571,11 +2558,7 @@ impl Build {
             .unwrap_or_else(|| self.cmd(tool));
         cmd.arg("-nologo"); // undocumented, yet working with armasm[64]
         for directory in self.include_directories.iter() {
-            if self.prefer_clang_cl_over_msvc {
-                cmd.arg(format!("-Xclang=-I{}", directory.display()));
-            } else {
-                cmd.arg("-I").arg(&**directory);
-            }
+            cmd.arg("-I").arg(&**directory);
         }
         if is_arm(&target) {
             if self.get_debug() {
@@ -2606,19 +2589,10 @@ impl Build {
             }
 
             for (key, value) in self.definitions.iter() {
-                if self.prefer_clang_cl_over_msvc  {
-                    if let Some(ref value) = *value {
-                        let v = value.replace('"', r#"""#);
-                        cmd.arg(format!("-D {key}={v}"));
-                    } else {
-                        cmd.arg(format!("-D {key}"));
-                    }
+                if let Some(ref value) = *value {
+                    cmd.arg(format!("-D{key}={value}"));
                 } else {
-                    if let Some(ref value) = *value {
-                        cmd.arg(format!("-D{key}={value}"));
-                    } else {
-                        cmd.arg(format!("-D{key}"));
-                    }
+                    cmd.arg(format!("-D{key}"));
                 }
             }
         }
