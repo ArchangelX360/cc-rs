@@ -551,7 +551,7 @@ impl Build {
             shell_escaped_flags: None,
             build_cache: Arc::default(),
             inherit_rustflags: true,
-            prefer_clang_cl_over_msvc: false,
+            prefer_clang_cl_over_msvc: get_prefer_clang_cl_over_msvc_from_env().unwrap_or(false),
         }
     }
 
@@ -1369,8 +1369,17 @@ impl Build {
     /// Prefer to use clang-cl over msvc.
     ///
     /// This option defaults to `false`.
+    ///
+    /// This option is always overridden by the environment variable CC_PREFER_CLANG_CL_OVER_MSVC, if set
     pub fn prefer_clang_cl_over_msvc(&mut self, prefer_clang_cl_over_msvc: bool) -> &mut Build {
-        self.prefer_clang_cl_over_msvc = prefer_clang_cl_over_msvc;
+        match get_prefer_clang_cl_over_msvc_from_env() {
+            Some(b) => {
+                self.cargo_output.print_warning(&format_args!("`prefer_clang_cl_over_msvc` is overridden by {:?} to {:?}, the value set by this call is ignored", CC_PREFER_CLANG_CL_OVER_MSVC_ENV_VAR, b));
+            },
+            None => {
+                self.prefer_clang_cl_over_msvc = prefer_clang_cl_over_msvc;
+            }
+        }
         self
     }
 
@@ -4406,6 +4415,18 @@ fn check_disabled() -> Result<(), Error> {
         ));
     }
     Ok(())
+}
+
+const CC_PREFER_CLANG_CL_OVER_MSVC_ENV_VAR: &str = "CC_PREFER_CLANG_CL_OVER_MSVC";
+fn get_prefer_clang_cl_over_msvc_from_env() -> Option<bool> {
+    match env::var_os(CC_PREFER_CLANG_CL_OVER_MSVC_ENV_VAR) {
+        None => None,
+        Some(v) => match v.to_str() {
+            Some("1") | Some("true") | Some("yes") => Some(true),
+            Some("0") | Some("false") | Some("no") => Some(false),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]

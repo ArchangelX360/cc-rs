@@ -852,8 +852,6 @@ fn clang_android() {
     }
 }
 
-#[cfg(windows)]
-#[cfg(not(disable_clang_cl_tests))]
 mod msvc_clang_cl_tests {
     use super::{reset_env, Test};
 
@@ -945,6 +943,92 @@ mod msvc_clang_cl_tests {
         assert!(
             compiler.is_like_msvc(),
             "clang-cl should still be MSVC-like in C++ mode"
+        );
+    }
+
+    #[test]
+    fn msvc_prefer_clang_cl_over_msvc_enabled_by_env() {
+        reset_env();
+        std::env::set_var("CC_PREFER_CLANG_CL_OVER_MSVC", "1");
+
+        let test = Test::msvc_autodetect();
+
+        let compiler = test
+            .gcc()
+            .try_get_compiler()
+            .expect("Failed to get compiler");
+
+        assert!(
+            compiler.is_like_clang_cl(),
+            "clang-cl.exe should be identified as clang-cl-like, got {:?}",
+            compiler
+        );
+        assert!(
+            compiler.is_like_msvc(),
+            "clang-cl should still be MSVC-like"
+        );
+    }
+
+    #[test]
+    fn msvc_prefer_clang_cl_over_msvc_disabled_by_env() {
+        reset_env();
+        std::env::set_var("CC_PREFER_CLANG_CL_OVER_MSVC", "0");
+
+        let test = Test::msvc_autodetect();
+
+        let compiler = test
+            .gcc()
+            .try_get_compiler()
+            .expect("Failed to get compiler");
+
+        assert!(compiler.is_like_msvc(), "Should use MSVC by default");
+        assert!(
+            !compiler.is_like_clang_cl(),
+            "Should not use clang-cl by default"
+        );
+    }
+
+    #[test]
+    fn msvc_prefer_clang_cl_over_msvc_disabled_by_env_precedence() {
+        reset_env();
+        std::env::set_var("CC_PREFER_CLANG_CL_OVER_MSVC", "0");
+
+        let test = Test::msvc_autodetect();
+
+        let compiler = test
+            .gcc()
+            .prefer_clang_cl_over_msvc(true)
+            .try_get_compiler()
+            .expect("Failed to get compiler");
+
+        assert!(compiler.is_like_msvc(), "Should use MSVC by default");
+        assert!(
+            !compiler.is_like_clang_cl(),
+            "Should not use clang-cl by default"
+        );
+    }
+
+    #[test]
+    fn msvc_prefer_clang_cl_over_msvc_enabled_by_env_precedence() {
+        reset_env();
+        std::env::set_var("CC_PREFER_CLANG_CL_OVER_MSVC", "1");
+
+        let test = Test::msvc_autodetect();
+
+        let compiler = test
+            .gcc()
+            .prefer_clang_cl_over_msvc(false)
+            .try_get_compiler()
+            .expect("Failed to get compiler");
+
+        assert!(
+            compiler.is_like_clang_cl(),
+            "clang-cl.exe should be identified as clang-cl-like, got {:?}",
+            compiler
+        );
+        assert!(
+            compiler.is_like_msvc(),
+            "clang-cl should still be MSVC-like"
         );
     }
 }
